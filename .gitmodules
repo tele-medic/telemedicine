@@ -19,3 +19,6 @@
 [submodule "services/notification"]
 	path = services/notification
 	url = git@github.com:tele-medic/notification-service.git
+[submodule "sdks/web"]
+	path = sdks/web
+	url = git@github.com:tele-medic/web-sdk.git
