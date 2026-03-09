@@ -16,3 +16,6 @@
 [submodule "services/recording"]
 	path = services/recording
 	url = git@github.com:tele-medic/recording-service.git
+[submodule "services/notification"]
+	path = services/notification
+	url = git@github.com:tele-medic/notification-service.git
