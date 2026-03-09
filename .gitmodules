@@ -13,3 +13,6 @@
 [submodule "services/webhook"]
 	path = services/webhook
 	url = git@github.com:tele-medic/webhook-service.git
+[submodule "services/recording"]
+	path = services/recording
+	url = git@github.com:tele-medic/recording-service.git
