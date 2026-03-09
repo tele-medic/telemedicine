@@ -7,3 +7,9 @@
 [submodule "services/gateway"]
 	path = services/gateway
 	url = git@github.com:tele-medic/api-gateway.git
+[submodule "services/turn"]
+	path = services/turn
+	url = git@github.com:tele-medic/turn-server.git
+[submodule "services/webhook"]
+	path = services/webhook
+	url = git@github.com:tele-medic/webhook-service.git
