@@ -1,0 +1,143 @@
+services:
+  # --- Infrastructure ---
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: telemedicine
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: telemedicine
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemedicine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  # --- LiveKit ---
+  livekit:
+    image: livekit/livekit-server
+    command: --config /etc/livekit.yaml --dev
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    volumes:
+      - ./config/livekit.yaml:/etc/livekit.yaml:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  livekit-egress:
+    image: livekit/egress
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - ./config/egress.yaml:/etc/egress.yaml:ro
+      - recordings:/tmp/recordings
+    depends_on:
+      - livekit
+
+  # --- Application Services ---
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://telemedicine:devpassword@postgres:5432/telemedicine?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      SESSION_SERVICE_ADDR: session:9091
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: devsecret
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+
+  session:
+    build:
+      context: ./services/session
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    environment:
+      HTTP_PORT: "8081"
+      GRPC_PORT: "9091"
+      DATABASE_URL: postgres://telemedicine:devpassword@postgres:5432/telemedicine?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: devsecret
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+
+  turn:
+    build:
+      context: ./services/turn
+      dockerfile: Dockerfile
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "5349:5349/tcp"
+    environment:
+      PUBLIC_IP: "127.0.0.1"
+      REALM: telemedicine.local
+      AUTH_SECRET: turnsecret
+      UDP_PORT: "3478"
+      TCP_PORT: "3478"
+      TLS_PORT: "5349"
+
+  webhook:
+    build:
+      context: ./services/webhook
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://telemedicine:devpassword@postgres:5432/telemedicine?sslmode=disable
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  miniodata:
+  recordings:

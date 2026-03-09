@@ -1,0 +1,6 @@
+[submodule "shared"]
+	path = shared
+	url = git@github.com:tele-medic/shared.git
+[submodule "services/session"]
+	path = services/session
+	url = git@github.com:tele-medic/session-service.git
