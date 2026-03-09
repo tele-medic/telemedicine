@@ -137,6 +137,47 @@ services:
       redis:
         condition: service_healthy
 
+  recording:
+    build:
+      context: ./services/recording
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      PORT: "8083"
+      DATABASE_URL: postgres://telemedicine:devpassword@postgres:5432/telemedicine?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: devsecret
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: recordings
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+      minio:
+        condition: service_started
+
+  notification:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8084"
+      DATABASE_URL: postgres://telemedicine:devpassword@postgres:5432/telemedicine?sslmode=disable
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   pgdata:
   miniodata:
