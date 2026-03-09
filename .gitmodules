@@ -4,3 +4,6 @@
 [submodule "services/session"]
 	path = services/session
 	url = git@github.com:tele-medic/session-service.git
+[submodule "services/gateway"]
+	path = services/gateway
+	url = git@github.com:tele-medic/api-gateway.git
